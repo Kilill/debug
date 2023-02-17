@@ -1,4 +1,5 @@
-# degbug library 
+# debug library 
+see dbgLevel.h for the diffierent levels and debug.h for macros and functions
 
 a set of macros and print routines to print debug information
 rellies heavly on printf functionality 
@@ -55,4 +56,3 @@ main() {
 
 ```
 
-see dbgLevel.h for the diffierent levels and debug.h for macros and functions
