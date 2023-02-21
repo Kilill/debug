@@ -19,32 +19,55 @@
 */
 #include "dbgLevels.h"
 
-/*! \file debug.h
- * debug defines
+/**
+ * Debug macros for level controlled printout
+ * Macro definitions anre enabled depending on bit values in the the
+ * define DEBUG_LEVEL if the bit is set the macro is defined as a call to dbg()
+ * otherwise its defined as empty
+ * 
+ * IF DEBUG_LEVEL is not set prior to including debug.h
+ * it is set bellow to DBG_DEF_L
+ * 
+ * dbgLevels.h needs be included before setting DEBUG_LEVEL to gett access to the level definitions
  *
- * a set of shortand macros for debugging purposes
+ * example:
+ * #include "dbgLevels.h" 
+ * #define DEBUG_LEVEL (DBG_DEF_L|DBG_INFO_L|DBG_1FV_L|DBG_2FV_L)
+ * #include "debug.h"
+ *
+ * by using the SET_XYS(onOff) macros, debugging printout can be dynamically enabled/disabled
+ * the printout macros comes in 2 flavours, one that prints the level as a prefix (DBG_XYZ()) and a silent variant
+ * that does not (DBG_XYZ_S()).
+ * Each leval (123) also has 2 variants , and "F" and a "V" variant (Even though the print macros drops the "F" for
+ * conviniece) the "F" variant is meant for be used for function type printouts while the "V" variants are meant for 
+ * variables.
+ * All the variants have a "NewLine" variant that only prints a newline at the specified level
+ * 
+ * there are also 4 dedicated macros for "FAIL","ERROR","WARNING" and INFO
+ * 
+ * see the README for further explanations
  */
+
+// default debug level if not already set
+
 #ifndef DEBUG_LEVEL
 #define DEBUG_LEVEL DBG_DEF_L
 #endif
 
-// Fail Error Warning and info levels
+// logical bit tests
 #define IS_FAIL		(DEBUG_LEVEL & DBG_FAIL_L)
 #define IS_ERROR	(DEBUG_LEVEL & DBG_ERR_L)
 #define IS_WARN		(DEBUG_LEVEL & DBG_WARN_L)
 #define IS_INFO		(DEBUG_LEVEL & DBG_INFO_L)
 
-// functions debug
 #define IS_1F		(DEBUG_LEVEL & DBG_1F_L)
 #define IS_2F		(DEBUG_LEVEL & DBG_2F_L)
 #define IS_3F		(DEBUG_LEVEL & DBG_3F_L)
 
-// variables debug
 #define IS_1V		(DEBUG_LEVEL & DBG_1V_L)
 #define IS_2V		(DEBUG_LEVEL & DBG_2V_L)
 #define IS_3V		(DEBUG_LEVEL & DBG_3V_L)
 
-// Verbose 
 #define IS_VERB_L	(DEBUG_LEVEL & DBG_VERBOSE_L)
 #define IS_ALL_L   	(DEBUG_LEVEL & DBG_ALL_L)
 
@@ -59,130 +82,49 @@
 #define IS_23FV_L	(DEBUG_LEVEL & (DBG_2F_L | DBG_2V_L| DBG_3F_L | DBG_3V_L))
 #define IS_3FV_L	(DEBUG_LEVEL & (DBG_1F_L | DBG_1V_L| DBG_2F_L | DBG_2V_L| F3_L | V3_L))
 
+#define IS_ANNY     (DEBUG_LEVEL & DBG_ALL_L)
 
 #define ON true
 #define OFF false
 #define CLR true
 #define NOCLR false
 
-// dynamically enable / disable debug output
-
-//  frequent dbgLevel settings
-//  these clear out everything else
-#define SET_DBG_NONE			setDbgLvl(DBG_NONE_L,OFF,CLR)
-
-// default setting
-#define SET_DBG_DEF				setDbgLvl((DBG_FAIL_L|DBG_ERROR_L|DBG_WARN_L),ON,true)
-
-// enable / disable individual levels
-
-#define SET_VERB_DBG(onOff)		setDbgLvl(DBG_VERB_L,onOff,false)
-
-
-
-#define SET_1VDBG(onOff)		setDbgLvl(DBG_1V_L,onOff,false)
-#define SET_2VDBG(onOff)		setDbgLvl(DBG_2V_L,onOff,false)
-#define SET_3VDBG(onOff)		setDbgLvl(DBG_3V_L,onOff,false)
-
-#define SET_FV1DBG(onOff)		setDbgLvl(DBG_1V_L|DBG_1F_L,onOff,false)
-#define SET_FV2DBG(onOff)		setDbgLvl(DBG_2V_L|DBG_2F_L,onOff,false)
-#define SET_FV3DBG(onOff)		setDbgLvl(DBG_3V_L|DBG_3F_L,onOff,false)
-
-#define SET_ALL_DBG(onOff)		setDbgLvl(DBG_ALL_L,onOff,false)
-
-// convinience...
+// if anny debuging level is set 
+#if IS_ANNY
+#define SET_DBGNONE	setDbgLvl(DBG_ALL_L,OFF,CLR)
+#define SET_DBGALL	setDbgLvl(DBG_ALL_L,ON,false)
+#define SET_DBGDEF	setDbgLvl((DBG_FAIL_L|DBG_ERROR_L|DBG_WARN_L),ON,true)
 #define SET_DBG(dbgMap,onOff,clear)	setDbgLvl(dbgMap,onOff,clear)
-
-/** set/reset debug levels to print out
- * 
- * Sets the global DbgLevel bitmat to controll what messages are eneabled
- * the onOff paramete controls if the level bit(s) is set or cleared
- * the clear paramater controlls if DbgLevel is cleared of other bits on setting
- * has no efect on other bits if reseting bits
- * 
- * @param uint16_t	level	bitmap of levels to set or clear
- * @param bool onOff	true =  set bits false clear bits
- * @param bool clear	true: set DbgLevel = to level ie other bits cleared, false:  OR DbgLevel with level
- */
-void setDbgLvl( uint16_t level,bool onOff,bool clear);
-
-/** Debug macros
- * they must be enabled in each file
- * by setting the corresponding bit in the DEBUG_LEVEL define
- * 
- * all the DBG macros are printf variants ie, DBG1("SomeVar=%d\n", someVar)
- * they will all output a level prefix so the preceding would result in:
- * DBG1: SomeWar=123
- *
- * there's a couple of variaations of the macros:
- *
- * DBGn() where n is a number from 1 to 3 thought be used for function descriptions and the like
- * DBGnV  Tought to be used for variable printouts
- * they print with the level prefix
- * DBGn_S() and DBGnV_S()  on the other hand do not print a leading level prefix
- * 
- * there are also DBGnNL versions that just prints a newline
- * used in cases where a DBGn macro text does not end with a newline and is followed
- * by other DBGn of another level that migh or might not be enabled.
- * 
- * Example:
- * DBG1("This line might have a some other dbg txt following");
- * DBG1V_S("this line does not have prefix\n")
- * DBG1NL	 // neded to put out newline since the DBG1V_S might be masked out
- *
- */
-
-/** ALL(format,...) 
- *
- * if anny debug is on, always print
- **/
-#if  (DEBUG_LEVEL & (DBG_1F_L|DBG_1V_L|DBG_2F_L|DBG_2V_L|DBG_3F_L|DBG_3V_L))
 #define DBGANY(format,...) dbg(ALL_L,false,format,##__VA_ARGS__)
-#define SET_ANNY(onOff)	setDbgLvl(ALL_L,onOff,false)
 #else
 #define DBGANY
 #define SET_ANNY
 #endif
 
-
-/** VERBOSE(format,...) 
- *
- * verbose all of the previous + minor variabels
- **/
+// verbose
 #if  VERB_L
-#define VERB(format,...) dbg(DBG_VERB_L,true,format,##__VA_ARGS__)
-#define VERB_S(format,...) dbg(DBG_VERB_L,false,format,##__VA_ARGS__)
-#define SET_VERB(onOff)	setDbgLvl(DBG_FAIL_L,onOff,false)
+#define VERB(format,...)	dbg(DBG_VERB_L,true,format,##__VA_ARGS__)
+#define VERB_S(format,...)	dbg(DBG_VERB_L,false,format,##__VA_ARGS__)
+#define SET_VERB(onOff)		setDbgLvl(DBG_FAIL_L,onOff,false)
 #else
 #define VERB
 #define VERB_S
 #define SET_VERB
 #endif
 
-/** FAIL(format,...) 
- *
- * failure events
- * events that makes the system non functional, should probably lead to a reboot, 
- * system might be able to recover
- **/
 #if IS_FAIL
 #define FAIL(format,...)	dbg(DBG_FAIL_L,true,format,##__VA_ARGS__)
 #define FAIL_S(format,...)	dbg(DBG_FAIL_L,false,format,##__VA_ARGS__)
-#define SET_FAIL(onOff)	setDbgLvl(DBG_FAIL_L,onOff,false)
+#define SET_FAIL(onOff)		setDbgLvl(DBG_FAIL_L,onOff,false)
 #else
 #define FAIL
 #define FAIL_S
 #define SET_FAIL
 #endif
 
-/** ERROR(format,...) 
- * 
- * nonfatal level errors , system might recover
- *
- **/
 #if  IS_ERROR
-#define ERROR(format,...)		dbg(DBG_ERROR_L,true,format,##__VA_ARGS__)
-#define ERROR_S(format,...)		dbg(DBG_ERROR_L,false,format,##__VA_ARGS__) 
+#define ERROR(format,...)	dbg(DBG_ERROR_L,true,format,##__VA_ARGS__)
+#define ERROR_S(format,...)	dbg(DBG_ERROR_L,false,format,##__VA_ARGS__) 
 #define SET_ERROR(onOff)	setDbgLvl(DBG_ERROR_L,onOff,false)
 #else
 #define ERROR
@@ -190,47 +132,30 @@ void setDbgLvl( uint16_t level,bool onOff,bool clear);
 #define SET_ERROR
 #endif
 
-/** WARN(format,...) 
- *
- * System if operational but might have restrictions
- **/
 #if  IS_WARN
 #define WARN(format,...)	dbg(DBG_WARN_L,true,format,##__VA_ARGS__)
 #define WARN_S(format,...)	dbg(DBG_WARN_L,false,format,##__VA_ARGS__)
-#define SET_WARN(onOff)	setDbgLvl(DBG_WARN_L,onOff,false)
+#define SET_WARN(onOff)		setDbgLvl(DBG_WARN_L,onOff,false)
 #else
 #define WARN
 #define WARN_S
 #define SET_WARN
 #endif
 
-/** INFO(format,...) 
- *
- * general information messages
- **/
 #if  IS_INFO
 #define INFO(format,...)	dbg(DBG_INFO_L,true,format,##__VA_ARGS__)
 #define INFO_S(format,...)	dbg(DBG_INFO_L,false,format,##__VA_ARGS__)
-#define SET_INFO(onOff)	setDbgLvl(DBG_INFO_L,onOff,false)
+#define SET_INFO(onOff)		setDbgLvl(DBG_INFO_L,onOff,false)
 #else
 #define INFO
 #define INFO_S
 #define SET_INFO
 #endif
 
-
-
-/** DGB1(format,...) 
- *
- * these should actually be called 1F but...
- *
- * level 1 debug, mayor events / desisions / functions
- **/
-
 #if  IS_1F
-#define DBG1(format,...) dbg(DBG_1F_L,true,format,##__VA_ARGS__)
-#define DBG1_S(format,...) dbg(DBG_1F_L,false,format,##__VA_ARGS__)
-#define DBG1NL dbgNl(DBG_1F_L)
+#define DBG1(format,...)	dbg(DBG_1F_L,true,format,##__VA_ARGS__)
+#define DBG1_S(format,...)	dbg(DBG_1F_L,false,format,##__VA_ARGS__)
+#define DBG1NL				dbgNl(DBG_1F_L)
 #define SET_DBG1(onOff)		setDbgLvl(DBG_1F_L,onOff,false)
 #else
 #define DBG1
@@ -239,16 +164,11 @@ void setDbgLvl( uint16_t level,bool onOff,bool clear);
 #define SET_DBG1
 #endif
 
-/** DGBV1(format,...) 
- *
- * level 1 variable values at level 1
- **/
-
 #if IS_1V
-#define DBG1V(format,...) dbg(DBG_1V_L,true,format,##__VA_ARGS__)
+#define DBG1V(format,...)	dbg(DBG_1V_L,true,format,##__VA_ARGS__)
 #define DBG1V_S(format,...) dbg(DBG_1V_L,false,format,##__VA_ARGS__)
-#define DBG1VNL dbgNl(DBG_1V_L)
-#define SET_DBG1V(onOff)		setDbgLvl(DBG_1V_L,onOff,false)
+#define DBG1VNL				dbgNl(DBG_1V_L)
+#define SET_DBG1V(onOff)	setDbgLvl(DBG_1V_L,onOff,false)
 #else
 #define DBG1V
 #define DBG1V_S
@@ -256,16 +176,11 @@ void setDbgLvl( uint16_t level,bool onOff,bool clear);
 #define SET_DBG1V
 #endif
 
-/** DGB2(format,...) 
- *
- * level 2 debug, minor descisions
- **/
-
 #if  IS_2F
-#define DBG2(format,...)		dbg(DBG_2F_L,true,format,##__VA_ARGS__)
-#define DBG2_S(format,...)		dbg(DBG_2F_L,false,format,##__VA_ARGS__)
-#define DBG2NL					dbgNl(DBG_2F_L)
-#define SET_DBG2(onOff)			setDbgLvl(DBG_2V_L,onOff,false)
+#define DBG2(format,...)	dbg(DBG_2F_L,true,format,##__VA_ARGS__)
+#define DBG2_S(format,...)	dbg(DBG_2F_L,false,format,##__VA_ARGS__)
+#define DBG2NL				dbgNl(DBG_2F_L)
+#define SET_DBG2(onOff)		setDbgLvl(DBG_2V_L,onOff,false)
 #else
 #define DBG2
 #define DBG2_S
@@ -273,33 +188,25 @@ void setDbgLvl( uint16_t level,bool onOff,bool clear);
 #define SET_DBG2
 #endif
 
-/** DGBV2(format,...) 
- *
- * level 2 variables
- **/
 
 #if  IS_2V
-#define DBG2V(format,...)		dbg(DBG_2V_L,true,format,##__VA_ARGS__)
-#define DBG2V_S(format,...)		dbg(DBG_2V_L,false,format,##__VA_ARGS__)
-#define DBG2VNL 				dbgNl(DBG_FV2_L)
-#define SET_DBG2V(onOff)		setDbgLvl(DBG_2V_L,onOff,false)
+#define DBG2V(format,...)	dbg(DBG_2V_L,true,format,##__VA_ARGS__)
+#define DBG2V_S(format,...)	dbg(DBG_2V_L,false,format,##__VA_ARGS__)
+#define DBG2VNL 			dbgNl(DBG_FV2_L)
+#define SET_DBG2V(onOff)	setDbgLvl(DBG_2V_L,onOff,false)
 #else
 #define DBG2V
 #define DBG2V_S
 #define DBG2VNL
-#define SET_2FDBG
+#define SET_DBG2V
 #endif
 
-/** DGBF3(format,...) 
- *
- * funcions level 3
- **/
 
 #if  IS_3F
-#define DBG3(format,...)		dbg(DBG_3F_L,true,format,##__VA_ARGS__)
-#define DBG3_S(format,...)		dbg(DBG_3F_L,false,format,##__VA_ARGS__)
-#define DBG3NL					dbgNl(DBG_F3_L)
-#define SET_DBG3F(onOff)		setDbgLvl(DBG_3F_L,onOff,false)
+#define DBG3(format,...)	dbg(DBG_3F_L,true,format,##__VA_ARGS__)
+#define DBG3_S(format,...)	dbg(DBG_3F_L,false,format,##__VA_ARGS__)
+#define DBG3NL				dbgNl(DBG_F3_L)
+#define SET_DBG3F(onOff)	setDbgLvl(DBG_3F_L,onOff,false)
 #else
 #define DBG3
 #define DBG3_S
@@ -307,46 +214,39 @@ void setDbgLvl( uint16_t level,bool onOff,bool clear);
 #define SET_DBG3F
 #endif
 
-/** DGBV3(format,...) 
- *
- * level 3 variables
- **/
-
 #if  IS_3V
-#define DBG3V(format,...)		dbg(DBG_3V_L,true,format,##__VA_ARGS__)
-#define DBG3V_S(format,...)		dbg(DBG_3V_L,false,format,##__VA_ARGS__)
-#define DBG3NL					dbgNl(DBG_F3_L)
-#define SET_DBG3V(onOff)		setDbgLvl(DBG_3V_L,onOff,false)
+#define DBG3V(format,...)	dbg(DBG_3V_L,true,format,##__VA_ARGS__)
+#define DBG3V_S(format,...)	dbg(DBG_3V_L,false,format,##__VA_ARGS__)
+#define DBG3NL				dbgNl(DBG_F3_L)
+#define SET_DBG3V(onOff)	setDbgLvl(DBG_3V_L,onOff,false)
 #else
 #define DBG3V
 #define DBG3V_S
-#define DBG3VNL					dbgNl(DBG_F3_L)
+#define DBG3VNL				dbgNl(DBG_F3_L)
 #define SET_DBG3V
 #endif
 
-
-
 // define newline macros for combos of levels
 #if IS_12FV
-#define DBG12NL dbgNl(DBG_FV1_L|DBG_FV2_L)
+#define DBG12NL		dbgNl(DBG_FV1_L|DBG_FV2_L)
 #else
 #define DBG12NL
 #endif
 
 #if IS_13FV
-#define DBG13NL dbgNl(DBG_FV1_L|DBG_FV3_L)
+#define DBG13NL		dbgNl(DBG_FV1_L|DBG_FV3_L)
 #else 
 #define DBG13NL 
 #endif
 
 #if IS_23FV
-#define DBG23NL dbgNl(DBG_FV2_L|DBG_FV3_L)
+#define DBG23NL		dbgNl(DBG_FV2_L|DBG_FV3_L)
 #else 
 #define DBG23NL 
 #endif
 
 #if IS123FV_L
-#define DBG123NL dbgNl(DBG_FV1_L|DBG_FV2_L|DBG_FV3_L)
+#define DBG123NL	dbgNl(DBG_FV1_L|DBG_FV2_L|DBG_FV3_L)
 #else
 #define DBG123NL 
 #endif
@@ -360,58 +260,66 @@ void setDbgLvl( uint16_t level,bool onOff,bool clear);
  */
 extern uint16_t  DbgLevel; 
 						
-/** send debug to serial
+/** print debug messages
  *
- * send out a debug message to the serial lines
- *
- * will only print if level >  DbgLevel 
- * @param level [in] debug level required to print message
- * @param format [in] printf format string
- * @param ... [in] varargs arguments to format string
+ * will only print if DbgLevel & level != 0
+ * usually not used by itself but via the DBG macros
+ * that are guarded by conditionals
+
+ * @param level  debug level required to print message
+ * @param prefix  Should prefix be printed or not
+ * @param format  printf format string
+ * @param ... varargs arguments to format string
  */
 void dbg(uint16_t level,bool prefix,const char* format,...);
 
 /** decode uint_16 to bit string
  * 
- * This is not thread safe unless the bp pointer is not null 
+ * This is not thread safe unless the bP pointer is not null 
  * since it uses and internal static buffer
  * to which the poitner is returned
  *
- * @param uint_16 w word to deccode
- * *param uint8_t * bP 	pointer to buffer where to store string,
+ * @param w16 word to deccode
+ * @param bP 	pointer to buffer where to store string,
  * 						make sure its at least 18 chars long
  * 						(16 '1' or '0' + 1 space + null char)
- * @return uint8_t * Pointer to decoded string
+ * @return bP	Pointer to decoded string defaults to NULL
  */
-const uint8_t * const WtoBstr(uint16_t b, uint8_t * bp=NULL);
+const uint8_t * const WtoBstr(uint16_t w16, uint8_t * bP=NULL);
 
 /** decode and  print debug level
  * 
- * @param level to decode
+ * prints list of debug levels enabled in "level"
+ * @param level level to decode
  */
 void printDbgLvl(uint16_t level);
 
 /** print newline char if DbgLevel matches
  *
- * @oaran uint16_t level  leval at witch to print
+ * @param level  leval at witch to print
  */
 void dbgNl(uint16_t level);
 
-/** set current global debug level
- *
- * sets the DebgLevel global bitmask 
+
+/** set/reset debug levels  in gloable DBgLevel
  * 
- * @param level level(s) to set DbgLevel to see dbgLevel.h for levels
- * @param bool onOff set or unset
+ * Sets the global DbgLevel bitmat to controll what messages are eneabled
+ * the onOff paramete controls if the level bit(s) is set or cleared
+ * the clear paramater controlls if DbgLevel is cleared of other bits on setting
+ * has no efect on other bits if reseting bits
+ * usually not used alone but via the SET_DBG... macros
+ * 
+ * @param level level(s) to enable / disable  see dbgLevel.h for levels
+ * @param onOff set or unset
  * @param clear should all previous bits be cleared or not
  */
 void setDbgLvl(uint16_t level,bool onOff,bool clear=false);
 
 
 /** dump buffer in hex and ascii
- * 
- * @param uint8_t *bufferP 	pointer to buffer
- * @param int len			number of bytes to dump
+ *
+ * @param bP 	pointer to buffer to dump from
+ * @param len	number of bytes to dump
  */
 void dbgHexDump(const uint8_t *bP,int len);
 

@@ -15,7 +15,7 @@
   or via https://www.gnu.org/licenses/gpl-3.0.en.html
 
 */
-
+/** \file debug.cpp */
 #include <Arduino.h>
 #include <stdio.h>
 #include <stdlib.h>
@@ -30,16 +30,17 @@ const char * dbgLvlTxt[]={
 	"ERROR", //1
 	"WARN",	//2
 	"INFO", //3
-	"F1",	//4
-	"V1",	//5
-	"F2",	//6
-	"V2",	//7
-	"F3",	//8
-	"V3",	//9
+	"1F",	//4
+	"2F",	//5
+	"3F",	//6
+	"1V",	//7
+	"2v",	//8
+	"3V",	//9
 	"VERBOSE" // 10
 	};
 
-// level and'ed with DbgLevel will show if message should be printed or not
+// print debug message
+
 void dbg(uint16_t level,bool prefix,const char * format,...) {
 va_list ap;
 const char* tmp="";
@@ -84,12 +85,6 @@ const char* tmp="";
 	}
 }
 
-/** dunp hex values of buffer
- *
- * @param uint8_t *bP pointer    to buffer to print
- * @param int len               number of bytes to print
- */
-
 void dbgHexDump(const uint8_t *bP,int len) {
 
 	uint8_t s[40];
@@ -130,7 +125,6 @@ void dbgHexDump(const uint8_t *bP,int len) {
 
     }
     printf("\n");
-
 }
 
 const uint8_t * const WtoBstr(uint16_t b,uint8_t * out) {
